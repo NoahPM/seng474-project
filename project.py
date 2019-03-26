@@ -9,12 +9,11 @@ from skimage import data, exposure
 
 
 def main():
-	path = "C:\\Users\\noahp\\Documents\\reddit-memes-dataset"
+	path = "C:\\Users\\noahp\\Documents\\reddit-memes-dataset\\memes"
 	hogs = []
 	fnames = []
-	db = json.loads(open(path + "\\db.json", "r").read())
+	db = json.loads(open("dp_fixed.json", encoding='utf-8').read())
 	print(json.dumps(db))
-	path += "\\memes"
 	for r, d, f in os.walk(path):
 		for name in f:
 			print(os.path.join(r, name))
