@@ -7,12 +7,18 @@ from skimage.feature import hog
 from skimage import data, exposure
 import nltk
 import re
+from sklearn.svm import SVR
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
 
 #trains based on features X and scores Y
 def train(X, Y):
+
 	clf = SVR(gamma='scale', C=1.0, epsilon=0.2)
-	clf.fit(X, y)
-	return clf
+	Xtrain,Xtest,Ytrain,Ytest=train_test_split(X,Y)
+	scores = cross_val_score(clf, X, Y, cv=5)
+	return scores
+
 
 def tag(s):
 	s = re.sub('[^A-Za-z]', ' ', s)
@@ -25,15 +31,11 @@ def tag(s):
 		out[i[1]] += 1
 	return out
 
-
-
-def main():
-	path = "C:\\Users\\noahp\\Documents\\reddit-memes-dataset\\memes\\"
+def extract(path):
 	X = []
-	scores = []
+	Y = []
 	db = json.loads(open("db.json", encoding='utf-8').read())
 	#print(json.dumps(db))
-	print(db['_default']['1']['title'])
 	for index in db['_default']:
 		na_img = Image.open('na.jpg')
 		fname = db['_default'][index]['id']
@@ -47,7 +49,7 @@ def main():
 				continue
 		if img == na_img:
 			continue
-		size = 32, 32
+		size = 64, 64
 		try:
 			fd= hog(img.resize(size), multichannel=True, block_norm = "L2-Hys")
 		except:
@@ -58,9 +60,22 @@ def main():
 			np.append(fd, value)
 		#print(fd.shape)
 		X.append(fd)
-		scores.append(db['_default'][index]['ups'])
+		Y.append(db['_default'][index]['ups'])
+	return X, Y
+
+def main():
+	path = "C:\\Users\\noahp\\Documents\\reddit-memes-dataset\\memes\\"
+	try:
+		X = np.load("X.npy")
+		Y = np.load("Y.npy")
+	except:
+		X,Y = extract(path)
+		np.save("X.npy", X)
+		np.save("Y.npy", Y)
 	print(np.asarray(X).shape)
-	print(np.asarray(scores).shape)
+	print(np.asarray(Y).shape)
+	scores = train(X, Y)
+	print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 
 
