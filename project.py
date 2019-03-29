@@ -6,14 +6,25 @@ import json
 from skimage.feature import hog
 from skimage import data, exposure
 import nltk
+import re
 
 #trains based on features X and scores Y
 def train(X, Y):
-	return
+	clf = SVR(gamma='scale', C=1.0, epsilon=0.2)
+	clf.fit(X, y)
+	return clf
 
-#reshapes an image to smaller dimensions
-def reshape(img):
-	return img
+def tag(s):
+	s = re.sub('[^A-Za-z]', ' ', s)
+	s = s.lower()
+	out = {}
+	tags = ["ADJ","ADP","ADV","CONJ","DET","NOUN","NUM","PRT","PRON","VERB","X"]
+	for i in tags:
+		out[i] = 0
+	for i in nltk.pos_tag(nltk.word_tokenize(s), tagset = 'universal'):
+		out[i[1]] += 1
+	return out
+
 
 
 def main():
@@ -24,20 +35,35 @@ def main():
 	#print(json.dumps(db))
 	print(db['_default']['1']['title'])
 	for index in db['_default']:
+		na_img = Image.open('na.jpg')
 		fname = db['_default'][index]['id']
 		try:
 			img = Image.open(path + fname + '.jpg')
 		except:
-			img = Image.open(path + fname + '.png')
-
-		#TODO resize images first
-		fd= hog(img, multichannel=True, block_norm = "L2-Hys")
-		print(fd.shape)
-
+			try:
+				img = Image.open(path + fname + '.png')
+			except:
+				print("missing file:" + fname)
+				continue
+		if img == na_img:
+			continue
+		size = 32, 32
+		try:
+			fd= hog(img.resize(size), multichannel=True, block_norm = "L2-Hys")
+		except:
+			fd= hog(img.resize(size), block_norm = "L2-Hys")
 
 		title = db['_default'][index]['title']
-		print(title)
-		print(nltk.pos_tag(nltk.word_tokenize(title)))
+		for key, value in tag(title).items():
+			np.append(fd, value)
+		#print(fd.shape)
+		X.append(fd)
+		scores.append(db['_default'][index]['ups'])
+	print(np.asarray(X).shape)
+	print(np.asarray(scores).shape)
+
+
+
 	# for r, d, f in os.walk(path):
 	# 	for name in f:
 	# 		print(os.path.join(r, name))
