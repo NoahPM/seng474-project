@@ -1,0 +1,7 @@
+numpy
+pillow
+scikit-image
+requests
+vadersentiment
+nltk
+sklearn
